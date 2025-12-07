@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Book Renting System</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --bg: #f4f7f6;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 { text-align: center; color: var(--primary); }
+
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            color: #777;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+
+        /* Sections */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Forms */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box; /* Ensures padding doesn't widen element */
+        }
+
+        button.action-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button.action-btn:hover { background-color: #357abd; }
+
+        /* Tables & Lists */
+        .book-list {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .book-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .book-item input[type="checkbox"] {
+            transform: scale(1.5);
+            margin-right: 15px;
+        }
+
+        .book-info { flex-grow: 1; }
+        .book-info strong { display: block; font-size: 1.1em; }
+        .book-info span { font-size: 0.9em; color: #666; }
+
+        .empty-msg { text-align: center; color: #999; margin-top: 20px; }
+
+        /* Status Badge */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: white;
+        }
+        .badge-rented { background-color: #f39c12; }
+        .badge-returned { background-color: #27ae60; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📚 Library System</h1>
+
+    <!-- Navigation -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showSection('rent')">Rent Book</button>
+        <button class="tab-btn" onclick="showSection('return')">Return Book</button>
+        <button class="tab-btn" onclick="showSection('status')">My Books</button>
+    </div>
+
+    <!-- 1. RENT SECTION -->
+    <div id="rent" class="section active">
+        <h2>Rent a Book</h2>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="rent-username" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+            <label>Book Name</label>
+            <input type="text" id="rent-bookname" placeholder="Enter book title">
+        </div>
+        <div class="form-group">
+            <label>Rent Date</label>
+            <input type="date" id="rent-date">
+        </div>
+        <button class="action-btn" onclick="rentBook()">Confirm Rent</button>
+    </div>
+
+    <!-- 2. RETURN SECTION -->
+    <div id="return" class="section">
+        <h2>Return Books</h2>
+        <div class="form-group">
+            <label>Enter Username to Load List</label>
+            <input type="text" id="return-username" placeholder="Enter username">
+            <button class="action-btn" style="background-color: #555; margin-top:5px;" onclick="loadReturnList()">Search Rentals</button>
+        </div>
+        
+        <div id="return-list-container" class="book-list">
+            <!-- List of books to return will appear here -->
+            <p class="empty-msg">Enter username to see rent list.</p>
+        </div>
+
+        <button id="btn-return-action" class="action-btn" style="display:none; background-color: #e74c3c;" onclick="processReturns()">Return Selected Books</button>
+    </div>
+
+    <!-- 3. STATUS SECTION -->
+    <div id="status" class="section">
+        <h2>My Books (History)</h2>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="status-username" placeholder="Enter username">
+            <button class="action-btn" style="background-color: #555; margin-top:5px;" onclick="checkStatus()">Check History</button>
+        </div>
+
+        <div id="status-list-container" class="book-list">
+             <p class="empty-msg">Enter username to view details.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Rent Date to Today
+    document.getElementById('rent-date').valueAsDate = new Date();
+
+    // Data Management (LocalStorage)
+    function getData() {
+        const data = localStorage.getItem('libraryData');
+        return data ? JSON.parse(data) : [];
+    }
+
+    function saveData(data) {
+        localStorage.setItem('libraryData', JSON.stringify(data));
+    }
+
+    // --- Tab Switching Logic ---
+    function showSection(id) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // Show selected
+        document.getElementById(id).classList.add('active');
+        // Highlight tab
+        const buttons = document.querySelectorAll('.tab-btn');
+        if(id === 'rent') buttons[0].classList.add('active');
+        if(id === 'return') buttons[1].classList.add('active');
+        if(id === 'status') buttons[2].classList.add('active');
+    }
+
+    // --- 1. RENT FUNCTION ---
+    function rentBook() {
+        const username = document.getElementById('rent-username').value.trim();
+        const bookName = document.getElementById('rent-bookname').value.trim();
+        const rentDate = document.getElementById('rent-date').value;
+
+        if (!username || !bookName || !rentDate) {
+            alert("Please fill in all fields.");
+            return;
+        }
+
+        const db = getData();
+        const newEntry = {
+            id: Date.now(), // Unique ID based on timestamp
+            username: username,
+            bookName: bookName,
+            rentDate: rentDate,
+            returnDate: null // Null means currently rented
+        };
+
+        db.push(newEntry);
+        saveData(db);
+
+        alert(`Success! '${bookName}' rented to ${username}.`);
+        
+        // Clear inputs
+        document.getElementById('rent-bookname').value = "";
+    }
+
+    // --- 2. RETURN UI LOGIC ---
+    function loadReturnList() {
+        const username = document.getElementById('return-username').value.trim();
+        if(!username) { alert("Please enter a username"); return; }
+
+        const db = getData();
+        const container = document.getElementById('return-list-container');
+        const returnBtn = document.getElementById('btn-return-action');
+
+        // Filter: Match username AND returnDate is null (meaning it is still rented)
+        const activeRentals = db.filter(item => 
+            item.username.toLowerCase() === username.toLowerCase() && 
+            item.returnDate === null
+        );
+
+        container.innerHTML = "";
+
+        if (activeRentals.length === 0) {
+            container.innerHTML = "<p class='empty-msg'>No active rentals found for this user.</p>";
+            returnBtn.style.display = "none";
+            return;
+        }
+
+        // Generate Checkboxes
+        activeRentals.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'book-item';
+            div.innerHTML = `
+                <input type="checkbox" class="return-checkbox" value="${item.id}">
+                <div class="book-info">
+                    <strong>${item.bookName}</strong>
+                    <span>Rented on: ${item.rentDate}</span>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        returnBtn.style.display = "block";
+    }
+
+    // --- 2b. PROCESS RETURN ---
+    function processReturns() {
+        const checkboxes = document.querySelectorAll('.return-checkbox:checked');
+        
+        if (checkboxes.length === 0) {
+            alert("Please select at least one book to return.");
+            return;
+        }
+
+        const idsToReturn = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        const currentDate = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+        
+        let db = getData();
+
+        // Update database
+        db = db.map(item => {
+            if (idsToReturn.includes(item.id)) {
+                return { ...item, returnDate: currentDate };
+            }
+            return item;
+        });
+
+        saveData(db);
+        
+        alert("Books returned successfully!");
+        loadReturnList(); // Refresh the list (returned items will disappear)
+    }
+
+    // --- 3. STATUS / HISTORY LOGIC ---
+    function checkStatus() {
+        const username = document.getElementById('status-username').value.trim();
+        if(!username) { alert("Please enter a username"); return; }
+
+        const db = getData();
+        const container = document.getElementById('status-list-container');
+
+        // Filter by username
+        const userHistory = db.filter(item => item.username.toLowerCase() === username.toLowerCase());
+
+        container.innerHTML = "";
+
+        if (userHistory.length === 0) {
+            container.innerHTML = "<p class='empty-msg'>No history found for this user.</p>";
+            return;
+        }
+
+        // Sort: Active rentals first, then by date
+        userHistory.sort((a, b) => (a.returnDate === null ? -1 : 1));
+
+        userHistory.forEach(item => {
+            const isReturned = item.returnDate !== null;
+            const statusBadge = isReturned 
+                ? `<span class="badge badge-returned">Returned on ${item.returnDate}</span>` 
+                : `<span class="badge badge-rented">Currently Rented</span>`;
+
+            const div = document.createElement('div');
+            div.className = 'book-item';
+            div.innerHTML = `
+                <div class="book-info">
+                    <strong>${item.bookName}</strong>
+                    <span>Rented: ${item.rentDate}</span><br>
+                    <div style="margin-top:5px;">${statusBadge}</div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+</script>
+
+</body>
+</html>
