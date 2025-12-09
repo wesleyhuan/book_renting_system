@@ -123,28 +123,28 @@
 <body>
 
 <div class="container">
-    <h1>📚 Library System</h1>
+    <h1>📚 借書系統</h1>
 
     <!-- Navigation -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="showSection('rent')">Rent Book</button>
-        <button class="tab-btn" onclick="showSection('return')">Return Book</button>
-        <button class="tab-btn" onclick="showSection('status')">My Books</button>
+        <button class="tab-btn active" onclick="showSection('rent')">借書</button>
+        <button class="tab-btn" onclick="showSection('return')">還書</button>
+        <button class="tab-btn" onclick="showSection('status')">書單查詢</button>
     </div>
 
     <!-- 1. RENT SECTION -->
     <div id="rent" class="section active">
-        <h2>Rent a Book</h2>
+        <h2>借書</h2>
         <div class="form-group">
-            <label>Username</label>
+            <label>使用者名稱</label>
             <input type="text" id="rent-username" placeholder="Enter username">
         </div>
         <div class="form-group">
-            <label>Book Name</label>
+            <label>書名</label>
             <input type="text" id="rent-bookname" placeholder="Enter book title">
         </div>
         <div class="form-group">
-            <label>Rent Date</label>
+            <label>租借日</label>
             <input type="date" id="rent-date">
         </div>
         <button class="action-btn" onclick="rentBook()">Confirm Rent</button>
@@ -152,16 +152,16 @@
 
     <!-- 2. RETURN SECTION -->
     <div id="return" class="section">
-        <h2>Return Books</h2>
+        <h2>還書</h2>
         <div class="form-group">
-            <label>Enter Username to Load List</label>
+            <label>輸入使用者名稱來查詢書單</label>
             <input type="text" id="return-username" placeholder="Enter username">
             <button class="action-btn" style="background-color: #555; margin-top:5px;" onclick="loadReturnList()">Search Rentals</button>
         </div>
         
         <div id="return-list-container" class="book-list">
             <!-- List of books to return will appear here -->
-            <p class="empty-msg">Enter username to see rent list.</p>
+            <p class="empty-msg">輸入使用者名稱來查詢書單</p>
         </div>
 
         <button id="btn-return-action" class="action-btn" style="display:none; background-color: #e74c3c;" onclick="processReturns()">Return Selected Books</button>
@@ -169,15 +169,15 @@
 
     <!-- 3. STATUS SECTION -->
     <div id="status" class="section">
-        <h2>My Books (History)</h2>
+        <h2>我的書單(借閱紀錄)</h2>
         <div class="form-group">
-            <label>Username</label>
+            <label>使用者名稱</label>
             <input type="text" id="status-username" placeholder="Enter username">
-            <button class="action-btn" style="background-color: #555; margin-top:5px;" onclick="checkStatus()">Check History</button>
+            <button class="action-btn" style="background-color: #555; margin-top:5px;" onclick="checkStatus()">查詢資料</button>
         </div>
 
         <div id="status-list-container" class="book-list">
-             <p class="empty-msg">Enter username to view details.</p>
+             <p class="empty-msg">輸入使用者名稱來查詢</p>
         </div>
     </div>
 </div>
