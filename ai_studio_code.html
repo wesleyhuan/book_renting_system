@@ -186,14 +186,31 @@
     // Initialize Rent Date to Today
     document.getElementById('rent-date').valueAsDate = new Date();
 
+    // Prevent XSS when injecting user content into innerHTML
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     // Data Management (LocalStorage)
     function getData() {
-        const data = localStorage.getItem('libraryData');
-        return data ? JSON.parse(data) : [];
+        try {
+            const data = localStorage.getItem('libraryData');
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error('Failed to load data:', e);
+            return [];
+        }
     }
 
     function saveData(data) {
-        localStorage.setItem('libraryData', JSON.stringify(data));
+        try {
+            localStorage.setItem('libraryData', JSON.stringify(data));
+        } catch (e) {
+            alert('Error: Could not save data. Storage may be full.');
+            console.error('Failed to save data:', e);
+        }
     }
 
     // --- Tab Switching Logic ---
@@ -270,8 +287,8 @@
             div.innerHTML = `
                 <input type="checkbox" class="return-checkbox" value="${item.id}">
                 <div class="book-info">
-                    <strong>${item.bookName}</strong>
-                    <span>Rented on: ${item.rentDate}</span>
+                    <strong>${escapeHtml(item.bookName)}</strong>
+                    <span>Rented on: ${escapeHtml(item.rentDate)}</span>
                 </div>
             `;
             container.appendChild(div);
@@ -326,21 +343,25 @@
             return;
         }
 
-        // Sort: Active rentals first, then by date
-        userHistory.sort((a, b) => (a.returnDate === null ? -1 : 1));
+        // Sort: Active rentals first
+        userHistory.sort((a, b) => {
+            if (a.returnDate === null && b.returnDate !== null) return -1;
+            if (a.returnDate !== null && b.returnDate === null) return 1;
+            return 0;
+        });
 
         userHistory.forEach(item => {
             const isReturned = item.returnDate !== null;
-            const statusBadge = isReturned 
-                ? `<span class="badge badge-returned">Returned on ${item.returnDate}</span>` 
+            const statusBadge = isReturned
+                ? `<span class="badge badge-returned">Returned on ${escapeHtml(item.returnDate)}</span>`
                 : `<span class="badge badge-rented">Currently Rented</span>`;
 
             const div = document.createElement('div');
             div.className = 'book-item';
             div.innerHTML = `
                 <div class="book-info">
-                    <strong>${item.bookName}</strong>
-                    <span>Rented: ${item.rentDate}</span><br>
+                    <strong>${escapeHtml(item.bookName)}</strong>
+                    <span>Rented: ${escapeHtml(item.rentDate)}</span><br>
                     <div style="margin-top:5px;">${statusBadge}</div>
                 </div>
             `;
